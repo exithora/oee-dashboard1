@@ -7,7 +7,7 @@ def calculate_oee_metrics(df):
     df['startOfOrder'] = pd.to_datetime(df['startOfOrder'])
     
     # Calculate Availability
-    df['Availability'] = (df['actualProductionTime'] - df['unplannedDowntime']) / \
+    df['Availability'] = (df['actualProductionTime'] ) / \
                         (df['plannedProductionTime'] - df['plannedDowntime'])
     
     # Calculate Performance
