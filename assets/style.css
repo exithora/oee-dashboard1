@@ -1,0 +1,49 @@
+/* Dashboard styling */
+.stApp {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header styling */
+h1 {
+    color: #0066cc;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f0f2f6;
+}
+
+h3 {
+    color: #262730;
+    margin-top: 2rem;
+}
+
+/* Metric containers */
+div.css-1r6slb0.e1tzin5v2 {
+    background-color: #ffffff;
+    border: 1px solid #f0f2f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Upload button */
+.stButton>button {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+/* Info messages */
+.stAlert {
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 0.5rem;
+}
+
+/* Dataframe styling */
+.dataframe {
+    font-size: 0.9rem;
+}
+
+/* Plotly chart containers */
+.js-plotly-plot {
+    margin-bottom: 2rem;
+}
