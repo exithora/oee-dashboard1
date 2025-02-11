@@ -10,11 +10,10 @@ def calculate_oee_metrics(df):
     df['plannedProductionTime'] = df['totalPieces'] * df['idealCycleTime']
 
     # Calculate Availability
-    df['Availability'] = df['plannedProductionTime'] / df['actualProductionTime']
+    df['Availability'] = (df['plannedProductionTime'] + df['plannedDowntime']) / df['actualProductionTime']
 
     # Calculate Performance
-    df['theoreticalOutput'] = df['actualProductionTime'] / df['idealCycleTime']
-    df['Performance'] = df['totalPieces'] / df['theoreticalOutput']
+    df['Performance'] = (df['idealCycleTime'] * df['totalPieces']) / df['actualProductionTime']
 
     # Calculate Quality
     df['Quality'] = df['goodPieces'] / df['totalPieces']
