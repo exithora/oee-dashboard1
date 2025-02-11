@@ -1,49 +1,94 @@
 /* Dashboard styling */
 .stApp {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
+    padding: 1rem;
 }
 
 /* Header styling */
 h1 {
-    color: #0066cc;
+    color: #1f77b4;
     padding-bottom: 1rem;
-    border-bottom: 2px solid #f0f2f6;
+    border-bottom: 2px solid #e6e9ef;
+    margin-bottom: 2rem;
+    font-weight: 600;
 }
 
 h3 {
-    color: #262730;
-    margin-top: 2rem;
+    color: #2c3e50;
+    margin: 1.5rem 0;
+    font-weight: 500;
 }
 
 /* Metric containers */
-div.css-1r6slb0.e1tzin5v2 {
-    background-color: #ffffff;
-    border: 1px solid #f0f2f6;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+div[data-testid="stMetricValue"] {
+    font-size: 2rem !important;
+    font-weight: 600 !important;
+    color: #1f77b4 !important;
 }
 
-/* Upload button */
-.stButton>button {
+div[data-testid="stMetricDelta"] {
+    font-size: 1rem !important;
+    color: #2c3e50 !important;
+}
+
+/* Metric cards */
+div.element-container:has(div[data-testid="stMetricValue"]) {
+    background-color: #ffffff;
+    border: 1px solid #e6e9ef;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+div.element-container:has(div[data-testid="stMetricValue"]):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Sidebar styling */
+section[data-testid="stSidebar"] {
+    background-color: #f8f9fa;
+    padding: 2rem 1rem;
+}
+
+section[data-testid="stSidebar"] > div {
+    padding-top: 1rem;
+}
+
+section[data-testid="stSidebar"] .stButton > button {
     width: 100%;
-    margin-top: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 0.5rem;
+    background-color: #1f77b4;
+    color: white;
+}
+
+/* File uploader */
+.stUploadButton {
+    margin: 1rem 0;
+}
+
+/* Chart containers */
+div.stPlotlyChart {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e6e9ef;
+    margin: 1rem 0;
 }
 
 /* Info messages */
-.stAlert {
+div.stAlert {
     padding: 1rem;
     margin: 1rem 0;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
+    border: none;
 }
 
 /* Dataframe styling */
-.dataframe {
+div[data-testid="stTable"] {
     font-size: 0.9rem;
-}
-
-/* Plotly chart containers */
-.js-plotly-plot {
-    margin-bottom: 2rem;
+    margin: 1rem 0;
 }
