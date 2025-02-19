@@ -4,7 +4,8 @@ from datetime import datetime
 def process_uploaded_file(uploaded_file):
     """Process and validate uploaded CSV file."""
     try:
-        df = pd.read_csv(uploaded_file)
+        # Read CSV file, skipping comment lines that start with #
+        df = pd.read_csv(uploaded_file, comment='#', skip_blank_lines=True)
         return df
     except Exception as e:
         raise Exception(f"Error reading CSV file: {str(e)}")

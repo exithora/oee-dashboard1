@@ -1,18 +1,20 @@
 # OEE (Overall Equipment Effectiveness) Data Template
+#
 # Instructions:
-# 1. Keep this header row, delete these comment lines when filling data
-# 2. Format for each column:
-#   - startOfOrder: Date and time (Format: MM/DD/YYYY HH:MM)
-#   - productionLine: Production line identifier (e.g., Line01, Line02)
-#   - partNumber: Part number being produced (e.g., PN001)
-#   - plannedProductionTime: Theoretical time needed for production (minutes)
-#   - actualProductionTime: Actual time taken for production (minutes)
-#   - idealCycleTime: Standard time to produce one piece (minutes)
-#   - totalPieces: Total number of pieces produced (whole numbers)
-#   - goodPieces: Number of quality-passing pieces (whole numbers)
-#   - plannedDowntime: Scheduled maintenance/break time (minutes)
-#   - unplannedDowntime: Unexpected stoppage time (minutes)
-
+# 1. Delete these comment lines when filling data
+# 2. Keep the header row (the line with column names)
+# 3. Format for each column:
+#    - startOfOrder: Date and time (Format: MM/DD/YYYY HH:MM)
+#    - productionLine: Production line identifier (e.g., Line01, Line02)
+#    - partNumber: Part number being produced (e.g., PN001)
+#    - plannedProductionTime: Theoretical time needed for production (minutes)
+#    - actualProductionTime: Actual time taken for production (minutes)
+#    - idealCycleTime: Standard time to produce one piece (minutes)
+#    - totalPieces: Total number of pieces produced (whole numbers)
+#    - goodPieces: Number of quality-passing pieces (whole numbers)
+#    - plannedDowntime: Scheduled maintenance/break time (minutes)
+#    - unplannedDowntime: Unexpected stoppage time (minutes)
+#
 startOfOrder,productionLine,partNumber,plannedProductionTime,actualProductionTime,idealCycleTime,totalPieces,goodPieces,plannedDowntime,unplannedDowntime
 1/12/2025 14:12,Line01,PN001,375.5,471,0.5,751,698,35,60.5
 1/12/2025 15:12,Line02,PN002,422.5,442,0.5,845,811,5,14.5
