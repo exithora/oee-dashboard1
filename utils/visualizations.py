@@ -16,7 +16,13 @@ def plot_oee_trend(df):
             y=df[metric],
             name=metric,
             line=dict(width=2, color=color),
-            hovertemplate=f"{metric}: %{{y:.1%}}<br>Date: %{{x}}<extra></extra>"
+            hovertemplate=(
+                f"{metric}: %{{y:.1%}}<br>"
+                "Date: %{x}<br>"
+                f"Line: {df['productionLine'].iloc[0]}<br>"
+                f"Part: {df['partNumber'].iloc[0]}"
+                "<extra></extra>"
+            )
         ))
 
     fig.update_layout(
@@ -63,7 +69,13 @@ def plot_metrics_breakdown(df):
             text=[f'{v:.1%}' for v in values],
             textposition='auto',
             marker_color=colors,
-            hovertemplate="Metric: %{x}<br>Value: %{y:.1%}<extra></extra>"
+            hovertemplate=(
+                "Metric: %{x}<br>"
+                "Value: %{y:.1%}<br>"
+                f"Line: {latest_data['productionLine']}<br>"
+                f"Part: {latest_data['partNumber']}"
+                "<extra></extra>"
+            )
         )
     ])
 
@@ -90,7 +102,7 @@ def plot_metrics_breakdown(df):
     return fig
 
 def plot_time_based_analysis(df, time_filter):
-    """Create time-based analysis chart."""
+    """Create time-based analysis chart by production line and part."""
     df = df.copy()
 
     # Format period based on time filter
@@ -107,7 +119,7 @@ def plot_time_based_analysis(df, time_filter):
         df['period'] = df['startOfOrder'].dt.year
         period_format = "Year: %{x}<br>"
 
-    grouped_data = df.groupby('period').agg({
+    grouped_data = df.groupby(['period', 'productionLine', 'partNumber']).agg({
         'OEE': 'mean',
         'Availability': 'mean',
         'Performance': 'mean',
@@ -126,7 +138,14 @@ def plot_time_based_analysis(df, time_filter):
             mode='lines+markers',
             name=metric,
             line=dict(color=color),
-            hovertemplate=period_format + f"{metric}: %{{y:.1%}}<extra></extra>"
+            hovertemplate=(
+                period_format +
+                f"{metric}: %{{y:.1%}}<br>"
+                "Line: %{customdata[0]}<br>"
+                "Part: %{customdata[1]}"
+                "<extra></extra>"
+            ),
+            customdata=grouped_data[['productionLine', 'partNumber']]
         ))
 
     fig.update_layout(

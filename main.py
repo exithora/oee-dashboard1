@@ -28,7 +28,7 @@ def main():
     st.markdown("""
     ### Overall Equipment Effectiveness Analysis
     Monitor and analyze your equipment's effectiveness with real-time metrics and visualizations.
-    Track Availability, Performance, and Quality to optimize your production process.
+    Track Availability, Performance, and Quality across production lines and parts.
     """)
 
     # Sidebar
@@ -41,15 +41,16 @@ def main():
             1. Download the template CSV file
             2. Fill in your production data
             3. Upload your completed CSV file
-            4. Use the time filter to analyze trends
+            4. Use the filters to analyze specific lines and parts
             """)
 
         # Template download
         st.subheader("📥 Download Template")
         template_data = pd.DataFrame(columns=[
-            'startOfOrder', 'plannedProductionTime', 'actualProductionTime',
-            'idealCycleTime', 'totalPieces', 'goodPieces', 'plannedDowntime',
-            'unplannedDowntime'
+            'startOfOrder', 'productionLine', 'partNumber',
+            'plannedProductionTime', 'actualProductionTime',
+            'idealCycleTime', 'totalPieces', 'goodPieces',
+            'plannedDowntime', 'unplannedDowntime'
         ])
 
         template_buffer = io.BytesIO()
@@ -76,15 +77,43 @@ def main():
         try:
             df = process_uploaded_file(uploaded_file)
             if validate_dataframe(df):
-                # Time filter
-                time_filter = st.selectbox(
-                    "🕒 Select Time Period",
-                    ["Daily", "Weekly", "Monthly", "Yearly"],
-                    help="Choose how to group the data for analysis"
-                )
+                # Filters
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    selected_lines = st.multiselect(
+                        "🏭 Production Lines",
+                        options=sorted(df['productionLine'].unique()),
+                        default=sorted(df['productionLine'].unique()),
+                        help="Select production lines to analyze"
+                    )
+
+                with col2:
+                    selected_parts = st.multiselect(
+                        "📦 Part Numbers",
+                        options=sorted(df['partNumber'].unique()),
+                        default=sorted(df['partNumber'].unique()),
+                        help="Select part numbers to analyze"
+                    )
+
+                with col3:
+                    time_filter = st.selectbox(
+                        "🕒 Time Period",
+                        ["Daily", "Weekly", "Monthly", "Yearly"],
+                        help="Choose how to group the data for analysis"
+                    )
+
+                # Filter data
+                filtered_df = df[
+                    df['productionLine'].isin(selected_lines) &
+                    df['partNumber'].isin(selected_parts)
+                ]
+
+                if len(filtered_df) == 0:
+                    st.warning("No data available for the selected filters")
+                    return
 
                 # Calculate metrics
-                df_with_metrics = calculate_oee_metrics(df)
+                df_with_metrics = calculate_oee_metrics(filtered_df)
 
                 # Display overall metrics
                 st.markdown("### 📈 Key Performance Indicators")
@@ -130,12 +159,23 @@ def main():
 
                 # Data table
                 with st.expander("🔍 View Detailed Data"):
+                    display_cols = [
+                        'startOfOrder', 'productionLine', 'partNumber',
+                        'OEE', 'Availability', 'Performance', 'Quality',
+                        'plannedProductionTime', 'actualProductionTime',
+                        'totalPieces', 'goodPieces'
+                    ]
+
                     st.dataframe(
-                        df_with_metrics.style.format({
+                        df_with_metrics[display_cols].style.format({
                             'OEE': '{:.1%}',
                             'Availability': '{:.1%}',
                             'Performance': '{:.1%}',
-                            'Quality': '{:.1%}'
+                            'Quality': '{:.1%}',
+                            'plannedProductionTime': '{:.1f}',
+                            'actualProductionTime': '{:.1f}',
+                            'totalPieces': '{:,.0f}',
+                            'goodPieces': '{:,.0f}'
                         }),
                         use_container_width=True
                     )
