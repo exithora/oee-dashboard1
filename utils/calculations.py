@@ -6,9 +6,6 @@ def calculate_oee_metrics(df):
     # Create a copy of the dataframe to avoid warnings
     df = df.copy()
 
-    # Convert date string to datetime
-    df.loc[:, 'startOfOrder'] = pd.to_datetime(df['startOfOrder'])
-
     # Calculate Planned Production Time (theoretical time needed)
     df.loc[:, 'plannedProductionTime'] = df['totalPieces'] * df['idealCycleTime']
 

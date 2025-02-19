@@ -6,6 +6,14 @@ def process_uploaded_file(uploaded_file):
     try:
         # Read CSV file, skipping comment lines that start with #
         df = pd.read_csv(uploaded_file, comment='#', skip_blank_lines=True)
+
+        # Convert startOfOrder to datetime with explicit format
+        df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%m/%d/%Y %H:%M', errors='coerce')
+
+        # Check if any dates failed to parse
+        if df['startOfOrder'].isna().any():
+            raise Exception("Some dates could not be parsed. Please ensure dates are in format: MM/DD/YYYY HH:MM")
+
         return df
     except Exception as e:
         raise Exception(f"Error reading CSV file: {str(e)}")
