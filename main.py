@@ -213,13 +213,9 @@ def main():
                     df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.year
                     period_label = "Yearly"
 
-                # Calculate average metrics based on time period
-                avg_metrics = df_with_metrics.groupby('period').agg({
-                    'OEE': 'mean',
-                    'Availability': 'mean',
-                    'Performance': 'mean',
-                    'Quality': 'mean'
-                })
+                # Calculate average metrics directly to avoid period aggregation issues
+                metrics_columns = ['OEE', 'Availability', 'Performance', 'Quality']
+                avg_metrics = {metric: df_with_metrics[metric].mean() for metric in metrics_columns}
                 
                 # Calculate the overall average (explicitly selecting numeric columns)
                 avg_metrics = {
