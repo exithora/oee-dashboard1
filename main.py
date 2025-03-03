@@ -219,7 +219,10 @@ def main():
                     'Availability': 'mean',
                     'Performance': 'mean',
                     'Quality': 'mean'
-                }).mean()
+                })
+                
+                # Calculate the overall average
+                avg_metrics = avg_metrics.mean(numeric_only=True)
 
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(
