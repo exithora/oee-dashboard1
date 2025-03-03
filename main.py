@@ -209,26 +209,26 @@ def main():
                 else:  # Yearly
                     period_label = "Yearly"
 
-                # Drop any rows with non-numeric values in key columns
+                # Define key metrics columns
                 metrics_cols = ['OEE', 'Availability', 'Performance', 'Quality']
                 
                 # Create a clean copy for calculations only
                 metrics_df = df_with_metrics.copy()
                 
-                # Force convert columns to numeric, replacing any errors with NaN
+                # Ensure all metrics columns are numeric
                 for col in metrics_cols:
+                    # Convert to float explicitly to handle any object types
                     metrics_df[col] = pd.to_numeric(metrics_df[col], errors='coerce')
                 
                 # Drop rows with NaN in any metrics column
                 metrics_df = metrics_df.dropna(subset=metrics_cols)
                 
-                # Manually calculate averages instead of using pandas aggregation
+                # Calculate averages safely
                 avg_metrics = {}
                 for col in metrics_cols:
                     if len(metrics_df) > 0:
-                        values = metrics_df[col].to_list()
-                        total = sum(values)
-                        avg_metrics[col] = total / len(values) if len(values) > 0 else 0.0
+                        # Use pandas mean which handles numeric data properly
+                        avg_metrics[col] = metrics_df[col].mean()
                     else:
                         avg_metrics[col] = 0.0
 

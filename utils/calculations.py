@@ -5,6 +5,12 @@ def calculate_oee_metrics(df):
     """Calculate OEE metrics from raw data."""
     # Create a copy of the dataframe to avoid warnings
     df = df.copy()
+    
+    # Ensure numeric columns are properly typed
+    numeric_cols = ['plannedProductionTime', 'actualProductionTime', 'idealCycleTime', 
+                    'totalPieces', 'goodPieces', 'plannedDowntime', 'unplannedDowntime']
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Calculate Planned Production Time (theoretical time needed)
     df.loc[:, 'plannedProductionTime'] = df['totalPieces'] * df['idealCycleTime']
@@ -32,6 +38,11 @@ def calculate_oee_metrics(df):
 
     # Calculate OEE
     df.loc[:, 'OEE'] = df['Availability'] * df['Performance'] * df['Quality']
+
+    # Ensure all metrics are float type to prevent object dtype issues
+    metric_cols = ['Availability', 'Performance', 'Quality', 'OEE']
+    for col in metric_cols:
+        df[col] = df[col].astype(float)
 
     # Clean up results
     df.loc[:, 'Availability'] = df['Availability'].clip(0, 1)
