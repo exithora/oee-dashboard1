@@ -1,4 +1,4 @@
 
 startOfOrder,productionLine,partNumber,plannedProductionTime,actualProductionTime,idealCycleTime,totalPieces,goodPieces,plannedDowntime,unplannedDowntime
-1/12/2025 14:12,Line01,PN001,375.5,471,0.5,751,698,35,60.5
-1/12/2025 15:12,Line01,PN002,422.5,442,0.5,845,811,5,14.5
+01/12/2025 14:12,Line01,PN001,375.5,471,0.5,751,698,35,60.5
+01/12/2025 15:12,Line01,PN002,422.5,442,0.5,845,811,5,14.5

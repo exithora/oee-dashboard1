@@ -7,12 +7,22 @@ def process_uploaded_file(uploaded_file):
         # Read CSV file, skipping comment lines that start with #
         df = pd.read_csv(uploaded_file, comment='#', skip_blank_lines=True)
 
-        # Convert startOfOrder to datetime with explicit format
-        df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%m/%d/%Y %H:%M', errors='coerce')
-
-        # Check if any dates failed to parse
-        if df['startOfOrder'].isna().any():
-            raise Exception("Some dates could not be parsed. Please ensure dates are in format: MM/DD/YYYY HH:MM")
+        # Try to convert startOfOrder with multiple format options
+        try:
+            # First try with explicit format MM/DD/YYYY HH:MM
+            df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%m/%d/%Y %H:%M', errors='coerce')
+            
+            # If that fails, try with more flexible parsing
+            if df['startOfOrder'].isna().any():
+                df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], errors='coerce')
+        
+            # Check if any dates still failed to parse
+            if df['startOfOrder'].isna().any():
+                raise Exception("Some dates could not be parsed. Please ensure dates are in format: MM/DD/YYYY HH:MM")
+        except Exception as e:
+            print(f"Date parsing error: {str(e)}")
+            print("Sample data from file:", df.head())
+            raise Exception(f"Error parsing dates: {str(e)}. Please ensure dates are in format: MM/DD/YYYY HH:MM")
 
         return df
     except Exception as e:
