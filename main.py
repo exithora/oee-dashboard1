@@ -209,13 +209,13 @@ def main():
                 else:  # Yearly
                     period_label = "Yearly"
 
-                # Calculate average metrics directly without grouping
-                metrics_columns = ['OEE', 'Availability', 'Performance', 'Quality']
-                avg_metrics = {}
-                
-                # Calculate mean for each metric individually
-                for metric in metrics_columns:
-                    avg_metrics[metric] = df_with_metrics[metric].mean()
+                # Skip period grouping entirely and calculate simple averages
+                avg_metrics = {
+                    'OEE': float(df_with_metrics['OEE'].mean()),
+                    'Availability': float(df_with_metrics['Availability'].mean()),
+                    'Performance': float(df_with_metrics['Performance'].mean()),
+                    'Quality': float(df_with_metrics['Quality'].mean())
+                }
 
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(

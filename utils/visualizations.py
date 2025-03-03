@@ -87,14 +87,12 @@ def plot_metrics_breakdown(df):
     df = df.copy()
     df['month'] = df['startOfOrder'].dt.strftime('%Y-%m')  # Use YYYY-MM format for better sorting
     
-    # Group by month
-    monthly_data = df.groupby('month').agg({
-        'OEE': 'mean',
-        'Availability': 'mean',
-        'Performance': 'mean',
-        'Quality': 'mean',
-        'startOfOrder': 'min'  # Get first date of each month for sorting
-    }).reset_index()
+    # Group by month - only aggregate numeric columns
+    metrics_list = ['OEE', 'Availability', 'Performance', 'Quality']
+    agg_dict = {metric: 'mean' for metric in metrics_list}
+    agg_dict['startOfOrder'] = 'min'  # Get first date of each month for sorting
+    
+    monthly_data = df.groupby('month').agg(agg_dict).reset_index()
     
     # Sort months chronologically
     monthly_data = monthly_data.sort_values('startOfOrder')
