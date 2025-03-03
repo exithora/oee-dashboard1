@@ -231,3 +231,91 @@ def plot_time_based_analysis(df, time_filter):
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
 
     return fig
+
+
+def plot_downtime_analysis(df):
+    """Create downtime analysis visualization."""
+    if len(df) == 0:
+        # Return empty figure if no data
+        fig = go.Figure()
+        fig.update_layout(title="No data available")
+        return fig
+    
+    # Get date range for title
+    start_date = df['startOfOrder'].min().strftime('%m/%d/%Y')
+    end_date = df['startOfOrder'].max().strftime('%m/%d/%Y')
+    date_range = f"{start_date} to {end_date}"
+    
+    # Group by production line and part number
+    grouped_data = df.groupby(['productionLine', 'partNumber']).agg({
+        'plannedDowntime': 'sum',
+        'unplannedDowntime': 'sum',
+        'startOfOrder': 'count'  # Count records for reference
+    }).reset_index()
+    
+    # Sort by total downtime for better visualization
+    grouped_data['totalDowntime'] = grouped_data['plannedDowntime'] + grouped_data['unplannedDowntime']
+    grouped_data = grouped_data.sort_values('totalDowntime', ascending=False)
+    
+    # Create combination labels for x-axis
+    grouped_data['linePartLabel'] = grouped_data['productionLine'] + ' - ' + grouped_data['partNumber']
+    
+    # Create figure with two bar traces
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        x=grouped_data['linePartLabel'],
+        y=grouped_data['plannedDowntime'],
+        name='Planned Downtime',
+        marker_color='#2ca02c',
+        hovertemplate=(
+            "Line: %{customdata[0]}<br>" +
+            "Part: %{customdata[1]}<br>" +
+            "Planned Downtime: %{y:.1f} min<br>" +
+            "<extra></extra>"
+        ),
+        customdata=grouped_data[['productionLine', 'partNumber']].values
+    ))
+    
+    fig.add_trace(go.Bar(
+        x=grouped_data['linePartLabel'],
+        y=grouped_data['unplannedDowntime'],
+        name='Unplanned Downtime',
+        marker_color='#d62728',
+        hovertemplate=(
+            "Line: %{customdata[0]}<br>" +
+            "Part: %{customdata[1]}<br>" +
+            "Unplanned Downtime: %{y:.1f} min<br>" +
+            "<extra></extra>"
+        ),
+        customdata=grouped_data[['productionLine', 'partNumber']].values
+    ))
+    
+    fig.update_layout(
+        title={
+            'text': f'Downtime Analysis by Production Line and Part<br><sub>{date_range}</sub>',
+            'y': 0.95,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        xaxis_title='Production Line - Part Number',
+        yaxis_title='Downtime (minutes)',
+        barmode='stack',
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        height=500
+    )
+    
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
+    
+    return fig

@@ -7,7 +7,8 @@ from utils.data_processing import process_uploaded_file, validate_dataframe
 from utils.visualizations import (
     plot_oee_trend,
     plot_metrics_breakdown,
-    plot_time_based_analysis
+    plot_time_based_analysis,
+    plot_downtime_analysis
 )
 
 # Page configuration
@@ -323,6 +324,10 @@ def main():
                     else:
                         st.warning("No data available for the selected time range")
 
+                # Downtime Analysis
+                st.markdown("### ⏱️ Downtime Analysis")
+                st.plotly_chart(plot_downtime_analysis(df_with_metrics), use_container_width=True)
+                
                 # Data table
                 with st.expander("🔍 View Detailed Data"):
                     display_cols = [
