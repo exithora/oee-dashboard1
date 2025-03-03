@@ -10,7 +10,7 @@ from utils.visualizations import (
     plot_time_based_analysis,
     plot_downtime_analysis
 )
-from streamlit.cache import cache
+import streamlit as st
 
 # Page configuration
 st.set_page_config(
