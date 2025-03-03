@@ -221,8 +221,13 @@ def main():
                     'Quality': 'mean'
                 })
                 
-                # Calculate the overall average
-                avg_metrics = avg_metrics.mean(numeric_only=True)
+                # Calculate the overall average (explicitly selecting numeric columns)
+                avg_metrics = {
+                    'OEE': avg_metrics['OEE'].mean(),
+                    'Availability': avg_metrics['Availability'].mean(),
+                    'Performance': avg_metrics['Performance'].mean(),
+                    'Quality': avg_metrics['Quality'].mean()
+                }
 
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(
