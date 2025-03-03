@@ -35,20 +35,25 @@ def process_uploaded_file(uploaded_file):
             if 'startOfOrder' not in df.columns:
                 raise Exception(f"'startOfOrder' column not found. Available columns: {df.columns.tolist()}")
                 
-            # First try with explicit format MM/DD/YYYY HH:MM
-            df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%m/%d/%Y %H:%M', errors='coerce')
+            # Try parsing with pandas' flexible date parser first
+            df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], errors='coerce')
             
-            # If that fails, try with more flexible parsing
+            # If that fails, try specific formats
             if df['startOfOrder'].isna().any():
-                df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], errors='coerce')
+                # Try MM/DD/YYYY HH:MM format
+                df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%m/%d/%Y %H:%M', errors='coerce')
+                
+            # If still failing, try YYYY-MM-DD HH:MM:SS format
+            if df['startOfOrder'].isna().any():
+                df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         
             # Check if any dates still failed to parse
             if df['startOfOrder'].isna().any():
-                raise Exception("Some dates could not be parsed. Please ensure dates are in format: MM/DD/YYYY HH:MM")
+                raise Exception("Some dates could not be parsed. Please ensure dates are in one of these formats: MM/DD/YYYY HH:MM or YYYY-MM-DD HH:MM:SS")
         except Exception as e:
             print(f"Date parsing error: {str(e)}")
             print("Sample data from file:", df.head())
-            raise Exception(f"Error parsing dates: {str(e)}. Please ensure dates are in format: MM/DD/YYYY HH:MM")
+            raise Exception(f"Error parsing dates: {str(e)}. Please ensure dates are in one of these formats: MM/DD/YYYY HH:MM or YYYY-MM-DD HH:MM:SS")
 
         return df
     except Exception as e:

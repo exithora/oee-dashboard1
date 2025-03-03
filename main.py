@@ -43,8 +43,8 @@ def main():
             Your CSV file should contain the following columns with specified formats:
 
             1. **startOfOrder** (Date & Time)
-               - Format: MM/DD/YYYY HH:MM
-               - Example: 1/12/2025 14:12
+               - Format: MM/DD/YYYY HH:MM or YYYY-MM-DD HH:MM:SS
+               - Examples: 1/12/2025 14:12 or 2025-01-12 14:12:00
 
             2. **productionLine** (Text)
                - Unique identifier for production line
