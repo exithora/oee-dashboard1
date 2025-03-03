@@ -56,78 +56,95 @@ def plot_oee_trend(df):
     return fig
 
 def plot_metrics_breakdown(df):
-    """Create metrics breakdown chart."""
+    """Create metrics trend chart by month."""
     if len(df) == 0:
         # Return empty figure if no data
         fig = go.Figure()
         fig.update_layout(title="No data available")
         return fig
-        
-    # Use the latest data for selected line and part
-    latest_data = df.iloc[-1]
     
     # Get production line and part info for title
-    line = latest_data['productionLine']
-    part = latest_data['partNumber']
-    date_str = latest_data['startOfOrder'].strftime('%m/%d/%Y %H:%M')
+    line = df['productionLine'].iloc[0]
+    part = df['partNumber'].iloc[0]
     
-    metrics = ['Availability', 'Performance', 'Quality']
-    values = [latest_data[metric] for metric in metrics]
-    colors = ['#ff7f0e', '#2ca02c', '#d62728']
-
-    fig = go.Figure(data=[
-        go.Bar(
-            x=metrics,
-            y=values,
-            text=[f'{v:.1%}' for v in values],
-            textposition='auto',
-            marker_color=colors,
+    # Add month column for grouping
+    df = df.copy()
+    df['month'] = df['startOfOrder'].dt.strftime('%B %Y')
+    
+    # Group by month
+    monthly_data = df.groupby('month').agg({
+        'OEE': 'mean',
+        'Availability': 'mean',
+        'Performance': 'mean',
+        'Quality': 'mean'
+    }).reset_index()
+    
+    # Sort months chronologically
+    monthly_data['month_sort'] = pd.to_datetime(monthly_data['month'], format='%B %Y')
+    monthly_data = monthly_data.sort_values('month_sort')
+    
+    # Create trend chart for all metrics
+    fig = go.Figure()
+    
+    metrics = ['OEE', 'Availability', 'Performance', 'Quality']
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+    
+    for metric, color in zip(metrics, colors):
+        fig.add_trace(go.Scatter(
+            x=monthly_data['month'],
+            y=monthly_data[metric],
+            mode='lines+markers',
+            name=metric,
+            line=dict(color=color, width=2),
             hovertemplate=(
-                "Metric: %{x}<br>"
-                "Value: %{y:.1%}<br>"
+                "Month: %{x}<br>"
+                f"{metric}: %{{y:.1%}}<br>"
                 f"Line: {line}<br>"
-                f"Part: {part}<br>"
-                f"Date: {date_str}"
+                f"Part: {part}"
                 "<extra></extra>"
             )
-        )
-    ])
-
-    # Add OEE value as annotation
-    fig.add_annotation(
-        text=f"OEE: {latest_data['OEE']:.1%}",
-        x=0.5,
-        y=1.05,
-        xref="paper",
-        yref="paper",
-        showarrow=False,
-        font=dict(size=14, color="black"),
-        bgcolor="#f0f0f0",
-        bordercolor="#cccccc",
-        borderwidth=1,
-        borderpad=4
-    )
-
+        ))
+    
+    current_month = df['startOfOrder'].max().strftime('%B %Y')
+    
     fig.update_layout(
         title={
-            'text': f'Metrics Breakdown - Line: {line}, Part: {part}',
+            'text': f'Monthly Metrics Trend - Line: {line}, Part: {part}',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top'
         },
+        xaxis_title='Month',
         yaxis_title='Value',
         yaxis_tickformat='.1%',
-        showlegend=False,
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
         plot_bgcolor='white',
         paper_bgcolor='white',
         height=400,
-        bargap=0.4
+        annotations=[
+            dict(
+                text=f"Current Month: {current_month}",
+                x=0.5,
+                y=1.1, 
+                xref="paper",
+                yref="paper",
+                showarrow=False,
+                font=dict(size=12, color="black")
+            )
+        ]
     )
-
+    
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
-
+    
     return fig
 
 def plot_time_based_analysis(df, time_filter):

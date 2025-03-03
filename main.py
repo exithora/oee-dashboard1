@@ -252,7 +252,7 @@ def main():
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.markdown("### 📉 Current Metrics")
+                    st.markdown("### 📈 Monthly Metrics Trend")
                     
                     # Add filters for metrics breakdown
                     breakdown_line = st.selectbox(
