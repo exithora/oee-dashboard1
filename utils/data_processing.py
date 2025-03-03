@@ -49,10 +49,14 @@ def process_uploaded_file(uploaded_file):
         
             # Check if any dates still failed to parse
             if df['startOfOrder'].isna().any():
+                print("Found NaN values in startOfOrder after parsing")
+                # Show the problematic rows
+                problem_rows = df[df['startOfOrder'].isna()]
+                print(f"Problematic rows: {problem_rows.head()}")
                 raise Exception("Some dates could not be parsed. Please ensure dates are in one of these formats: MM/DD/YYYY HH:MM or YYYY-MM-DD HH:MM:SS")
         except Exception as e:
             print(f"Date parsing error: {str(e)}")
-            print("Sample data from file:", df.head())
+            print("Sample data from file:", df.head().to_string())
             raise Exception(f"Error parsing dates: {str(e)}. Please ensure dates are in one of these formats: MM/DD/YYYY HH:MM or YYYY-MM-DD HH:MM:SS")
 
         return df

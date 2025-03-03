@@ -9,14 +9,26 @@ def calculate_oee_metrics(df):
     # Calculate Planned Production Time (theoretical time needed)
     df.loc[:, 'plannedProductionTime'] = df['totalPieces'] * df['idealCycleTime']
 
-    # Calculate Availability
-    df.loc[:, 'Availability'] = (df['plannedProductionTime'] + df['plannedDowntime']) / df['actualProductionTime']
+    # Calculate Availability with error handling
+    df.loc[:, 'Availability'] = np.where(
+        df['actualProductionTime'] > 0,
+        (df['plannedProductionTime'] + df['plannedDowntime']) / df['actualProductionTime'],
+        0  # Handle division by zero
+    )
 
-    # Calculate Performance
-    df.loc[:, 'Performance'] = (df['idealCycleTime'] * df['totalPieces']) / df['actualProductionTime']
+    # Calculate Performance with error handling
+    df.loc[:, 'Performance'] = np.where(
+        df['actualProductionTime'] > 0,
+        (df['idealCycleTime'] * df['totalPieces']) / df['actualProductionTime'],
+        0  # Handle division by zero
+    )
 
-    # Calculate Quality
-    df.loc[:, 'Quality'] = df['goodPieces'] / df['totalPieces']
+    # Calculate Quality with error handling
+    df.loc[:, 'Quality'] = np.where(
+        df['totalPieces'] > 0,
+        df['goodPieces'] / df['totalPieces'],
+        0  # Handle division by zero
+    )
 
     # Calculate OEE
     df.loc[:, 'OEE'] = df['Availability'] * df['Performance'] * df['Quality']
