@@ -200,11 +200,68 @@ def main():
                 col1, col2 = st.columns(2)
                 with col1:
                     st.markdown("### 📉 Current Metrics")
-                    st.plotly_chart(plot_metrics_breakdown(df_with_metrics), use_container_width=True)
+                    
+                    # Add filters for metrics breakdown
+                    breakdown_line = st.selectbox(
+                        "Production Line (Metrics Breakdown)",
+                        options=sorted(df_with_metrics['productionLine'].unique()),
+                        key="breakdown_line",
+                        help="Select production line for metrics breakdown"
+                    )
+                    
+                    breakdown_part = st.selectbox(
+                        "Part Number (Metrics Breakdown)",
+                        options=sorted(df_with_metrics[df_with_metrics['productionLine'] == breakdown_line]['partNumber'].unique()),
+                        key="breakdown_part",
+                        help="Select part number for metrics breakdown"
+                    )
+                    
+                    # Filter metrics breakdown data
+                    breakdown_df = df_with_metrics[
+                        (df_with_metrics['productionLine'] == breakdown_line) &
+                        (df_with_metrics['partNumber'] == breakdown_part)
+                    ]
+                    
+                    if len(breakdown_df) > 0:
+                        st.plotly_chart(plot_metrics_breakdown(breakdown_df), use_container_width=True)
+                    else:
+                        st.warning("No data available for the selected breakdown filters")
 
                 with col2:
                     st.markdown(f"### 📈 {time_filter} Analysis")
-                    st.plotly_chart(plot_time_based_analysis(df_with_metrics, time_filter), use_container_width=True)
+                    
+                    # Add date range filter for time-based analysis
+                    min_date = df_with_metrics['startOfOrder'].min().date()
+                    max_date = df_with_metrics['startOfOrder'].max().date()
+                    
+                    date_range = st.date_input(
+                        "Date Range (Time Analysis)",
+                        value=(min_date, max_date),
+                        min_value=min_date,
+                        max_value=max_date,
+                        help="Select date range for time analysis"
+                    )
+                    
+                    # Handle single date selection
+                    if isinstance(date_range, tuple) and len(date_range) == 2:
+                        start_date, end_date = date_range
+                    else:
+                        start_date = end_date = date_range
+                    
+                    # Convert to datetime for filtering
+                    start_datetime = pd.Timestamp(start_date)
+                    end_datetime = pd.Timestamp(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+                    
+                    # Filter time-based analysis data
+                    time_analysis_df = df_with_metrics[
+                        (df_with_metrics['startOfOrder'] >= start_datetime) &
+                        (df_with_metrics['startOfOrder'] <= end_datetime)
+                    ]
+                    
+                    if len(time_analysis_df) > 0:
+                        st.plotly_chart(plot_time_based_analysis(time_analysis_df, time_filter), use_container_width=True)
+                    else:
+                        st.warning("No data available for the selected time range")
 
                 # Data table
                 with st.expander("🔍 View Detailed Data"):

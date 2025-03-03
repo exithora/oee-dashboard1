@@ -57,7 +57,20 @@ def plot_oee_trend(df):
 
 def plot_metrics_breakdown(df):
     """Create metrics breakdown chart."""
+    if len(df) == 0:
+        # Return empty figure if no data
+        fig = go.Figure()
+        fig.update_layout(title="No data available")
+        return fig
+        
+    # Use the latest data for selected line and part
     latest_data = df.iloc[-1]
+    
+    # Get production line and part info for title
+    line = latest_data['productionLine']
+    part = latest_data['partNumber']
+    date_str = latest_data['startOfOrder'].strftime('%m/%d/%Y %H:%M')
+    
     metrics = ['Availability', 'Performance', 'Quality']
     values = [latest_data[metric] for metric in metrics]
     colors = ['#ff7f0e', '#2ca02c', '#d62728']
@@ -72,16 +85,32 @@ def plot_metrics_breakdown(df):
             hovertemplate=(
                 "Metric: %{x}<br>"
                 "Value: %{y:.1%}<br>"
-                f"Line: {latest_data['productionLine']}<br>"
-                f"Part: {latest_data['partNumber']}"
+                f"Line: {line}<br>"
+                f"Part: {part}<br>"
+                f"Date: {date_str}"
                 "<extra></extra>"
             )
         )
     ])
 
+    # Add OEE value as annotation
+    fig.add_annotation(
+        text=f"OEE: {latest_data['OEE']:.1%}",
+        x=0.5,
+        y=1.05,
+        xref="paper",
+        yref="paper",
+        showarrow=False,
+        font=dict(size=14, color="black"),
+        bgcolor="#f0f0f0",
+        bordercolor="#cccccc",
+        borderwidth=1,
+        borderpad=4
+    )
+
     fig.update_layout(
         title={
-            'text': 'Current Metrics Breakdown',
+            'text': f'Metrics Breakdown - Line: {line}, Part: {part}',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -103,6 +132,12 @@ def plot_metrics_breakdown(df):
 
 def plot_time_based_analysis(df, time_filter):
     """Create time-based analysis chart by production line and part."""
+    if len(df) == 0:
+        # Return empty figure if no data
+        fig = go.Figure()
+        fig.update_layout(title="No data available for selected time range")
+        return fig
+        
     df = df.copy()
 
     # Format period based on time filter
@@ -118,6 +153,11 @@ def plot_time_based_analysis(df, time_filter):
     else:  # Yearly
         df['period'] = df['startOfOrder'].dt.year
         period_format = "Year: %{x}<br>"
+
+    # Get date range for title
+    start_date = df['startOfOrder'].min().strftime('%m/%d/%Y')
+    end_date = df['startOfOrder'].max().strftime('%m/%d/%Y')
+    date_range = f"{start_date} to {end_date}"
 
     grouped_data = df.groupby(['period', 'productionLine', 'partNumber']).agg({
         'OEE': 'mean',
@@ -150,7 +190,7 @@ def plot_time_based_analysis(df, time_filter):
 
     fig.update_layout(
         title={
-            'text': f'{time_filter} Average Metrics Analysis',
+            'text': f'{time_filter} Average Metrics Analysis<br><sub>{date_range}</sub>',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
