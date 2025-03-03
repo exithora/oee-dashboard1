@@ -212,68 +212,6 @@ def plot_metrics_breakdown(df):
     )
     
     return fig
-    
-    # Convert results to DataFrame
-    monthly_data = pd.DataFrame(result_data)
-    
-    # Sort months chronologically
-    monthly_data = monthly_data.sort_values('startOfOrder')
-    
-    # Format month display
-    monthly_data['month_display'] = pd.to_datetime(monthly_data['startOfOrder']).dt.strftime('%b %Y')
-    
-    # Create trend chart for all metrics
-    fig = go.Figure()
-    
-    metrics = ['OEE', 'Availability', 'Performance', 'Quality']
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-    
-    for metric, color in zip(metrics, colors):
-        fig.add_trace(go.Scatter(
-            x=monthly_data['month_display'],
-            y=monthly_data[metric],
-            mode='lines+markers',
-            name=metric,
-            line=dict(color=color, width=2),
-            hovertemplate=(
-                "Month: %{x}<br>"
-                f"{metric}: %{{y:.1%}}<br>"
-                f"Line: {line}<br>"
-                f"Part: {part}"
-                "<extra></extra>"
-            )
-        ))
-    
-    current_month = df['startOfOrder'].max().strftime('%B %Y')
-    
-    fig.update_layout(
-        title={
-            'text': f'Monthly Metrics Trend<br><sup>Current Month: {current_month}</sup>',
-            'y': 0.95,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
-        xaxis_title='Month',
-        yaxis_title='Value',
-        yaxis_tickformat='.1%',
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        height=400
-    )
-    
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
-    
-    return fig
 
 def plot_time_based_analysis(df, time_filter):
     """Create time-based analysis chart, optimized for clarity."""
