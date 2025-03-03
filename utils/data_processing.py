@@ -4,11 +4,37 @@ from datetime import datetime
 def process_uploaded_file(uploaded_file):
     """Process and validate uploaded CSV file."""
     try:
-        # Read CSV file, skipping comment lines that start with #
+        # Print the first few lines for debugging
+        uploaded_file.seek(0)
+        print("First few lines of uploaded file:")
+        for i, line in enumerate(uploaded_file):
+            if i < 5:
+                print(f"Line {i}: {line.decode('utf-8').strip()}")
+            else:
+                break
+        uploaded_file.seek(0)
+        
+        # Read CSV file, skipping comment lines that start with # and blank lines
         df = pd.read_csv(uploaded_file, comment='#', skip_blank_lines=True)
-
+        
+        # Check if headers are in data - this happens when there's a blank line at the start
+        if any("Unnamed" in col for col in df.columns):
+            print("Detected header row in data, attempting to fix...")
+            # First row might contain the actual headers
+            if "startOfOrder" in df.iloc[0, 0]:
+                # Use the first row as headers and skip it in the data
+                new_headers = df.iloc[0].tolist()
+                df = pd.DataFrame(df.values[1:], columns=new_headers)
+            
+        print("DataFrame after processing:")
+        print(df.head())
+        print("Columns:", df.columns.tolist())
+        
         # Try to convert startOfOrder with multiple format options
         try:
+            if 'startOfOrder' not in df.columns:
+                raise Exception(f"'startOfOrder' column not found. Available columns: {df.columns.tolist()}")
+                
             # First try with explicit format MM/DD/YYYY HH:MM
             df['startOfOrder'] = pd.to_datetime(df['startOfOrder'], format='%m/%d/%Y %H:%M', errors='coerce')
             
@@ -26,6 +52,7 @@ def process_uploaded_file(uploaded_file):
 
         return df
     except Exception as e:
+        print(f"Exception in process_uploaded_file: {str(e)}")
         raise Exception(f"Error reading CSV file: {str(e)}")
 
 def validate_dataframe(df):
