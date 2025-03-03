@@ -233,7 +233,7 @@ def plot_time_based_analysis(df, time_filter):
     return fig
 
 
-def plot_downtime_analysis(df):
+def plot_downtime_analysis(df, day_filter=None):
     """Create downtime analysis visualization."""
     if len(df) == 0:
         # Return empty figure if no data
@@ -241,10 +241,25 @@ def plot_downtime_analysis(df):
         fig.update_layout(title="No data available")
         return fig
     
+    # Create a copy to avoid modifying the original dataframe
+    df = df.copy()
+    
+    # Add day column for filtering
+    df['day'] = df['startOfOrder'].dt.date
+    
+    # Filter by selected day if provided
+    if day_filter is not None:
+        df = df[df['day'] == day_filter]
+        if len(df) == 0:
+            # Return empty figure if no data for the selected day
+            fig = go.Figure()
+            fig.update_layout(title=f"No downtime data available for {day_filter.strftime('%m/%d/%Y')}")
+            return fig
+    
     # Get date range for title
     start_date = df['startOfOrder'].min().strftime('%m/%d/%Y')
     end_date = df['startOfOrder'].max().strftime('%m/%d/%Y')
-    date_range = f"{start_date} to {end_date}"
+    date_range = f"{start_date}" if start_date == end_date else f"{start_date} to {end_date}"
     
     # Group by production line and part number
     grouped_data = df.groupby(['productionLine', 'partNumber']).agg({
@@ -291,9 +306,16 @@ def plot_downtime_analysis(df):
         customdata=grouped_data[['productionLine', 'partNumber']].values
     ))
     
+    # Create title based on filter status
+    title_text = 'Downtime Analysis by Production Line and Part'
+    if day_filter:
+        title_text += f' for {day_filter.strftime("%m/%d/%Y")}'
+    else:
+        title_text += f'<br><sub>{date_range}</sub>'
+    
     fig.update_layout(
         title={
-            'text': f'Downtime Analysis by Production Line and Part<br><sub>{date_range}</sub>',
+            'text': title_text,
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',

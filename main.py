@@ -326,7 +326,25 @@ def main():
 
                 # Downtime Analysis
                 st.markdown("### ⏱️ Downtime Analysis")
-                st.plotly_chart(plot_downtime_analysis(df_with_metrics), use_container_width=True)
+                
+                # Add day filter for downtime analysis
+                available_days = sorted(df_with_metrics['startOfOrder'].dt.date.unique())
+                day_filter_col1, day_filter_col2 = st.columns([1, 3])
+                
+                with day_filter_col1:
+                    use_day_filter = st.checkbox("Filter by day", value=False, help="Enable to view downtime data for a specific day")
+                
+                with day_filter_col2:
+                    selected_day = st.selectbox(
+                        "Select day",
+                        options=available_days,
+                        disabled=not use_day_filter,
+                        help="Choose a specific day to analyze downtime"
+                    ) if available_days else None
+                
+                # Apply day filter based on selection
+                day_filter = selected_day if use_day_filter and selected_day else None
+                st.plotly_chart(plot_downtime_analysis(df_with_metrics, day_filter), use_container_width=True)
                 
                 # Data table
                 with st.expander("🔍 View Detailed Data"):
