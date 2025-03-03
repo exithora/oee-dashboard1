@@ -199,31 +199,23 @@ def main():
                 st.markdown("### 📈 Key Performance Indicators")
                 metrics_container = st.container()
 
-                # Group data based on time filter for KPIs
+                # Set period label based on time filter
                 if time_filter == "Daily":
-                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.date
                     period_label = "Daily"
                 elif time_filter == "Weekly":
-                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.strftime('Week %W, %Y')
                     period_label = "Weekly"
                 elif time_filter == "Monthly":
-                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.strftime('%B %Y')
                     period_label = "Monthly"
                 else:  # Yearly
-                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.year
                     period_label = "Yearly"
 
-                # Calculate average metrics directly to avoid period aggregation issues
+                # Calculate average metrics directly without grouping
                 metrics_columns = ['OEE', 'Availability', 'Performance', 'Quality']
-                avg_metrics = {metric: df_with_metrics[metric].mean() for metric in metrics_columns}
+                avg_metrics = {}
                 
-                # Calculate the overall average (explicitly selecting numeric columns)
-                avg_metrics = {
-                    'OEE': avg_metrics['OEE'].mean(),
-                    'Availability': avg_metrics['Availability'].mean(),
-                    'Performance': avg_metrics['Performance'].mean(),
-                    'Quality': avg_metrics['Quality'].mean()
-                }
+                # Calculate mean for each metric individually
+                for metric in metrics_columns:
+                    avg_metrics[metric] = df_with_metrics[metric].mean()
 
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(
