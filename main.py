@@ -10,7 +10,7 @@ from utils.visualizations import (
     plot_time_based_analysis,
     plot_downtime_analysis
 )
-from streamlit.caching import cache
+from streamlit.cache import cache
 
 # Page configuration
 st.set_page_config(
@@ -24,7 +24,7 @@ st.set_page_config(
 with open('assets/style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-@cache(persist="disk", show_spinner=False)
+@st.cache_data(persist="disk", show_spinner=False)
 def get_filtered_data(df, lines=None, parts=None, start_date=None, end_date=None):
     df_filtered = df.copy()
     if lines:
