@@ -167,30 +167,83 @@ def main():
                 # Display overall metrics
                 st.markdown("### 📈 Key Performance Indicators")
                 metrics_container = st.container()
+                
+                # Group data based on time filter for KPIs
+                if time_filter == "Daily":
+                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.date
+                    period_label = "Daily"
+                elif time_filter == "Weekly":
+                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.strftime('Week %W, %Y')
+                    period_label = "Weekly"
+                elif time_filter == "Monthly":
+                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.strftime('%B %Y')
+                    period_label = "Monthly"
+                else:  # Yearly
+                    df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.year
+                    period_label = "Yearly"
+                
+                # Calculate average metrics based on time period
+                avg_metrics = df_with_metrics.groupby('period').agg({
+                    'OEE': 'mean',
+                    'Availability': 'mean',
+                    'Performance': 'mean',
+                    'Quality': 'mean'
+                }).mean()
+                
+                # Option to switch between latest and average metrics
+                metric_type = st.radio(
+                    "KPI Display Type:",
+                    ["Latest Values", f"Average ({period_label})"],
+                    horizontal=True,
+                    help=f"Choose to display the most recent values or {period_label.lower()} averages"
+                )
+                
                 col1, col2, col3, col4 = metrics_container.columns(4)
-
-                latest_metrics = df_with_metrics.iloc[-1]
-
-                col1.metric(
-                    "Overall OEE",
-                    f"{latest_metrics['OEE']:.1%}",
-                    help="Overall Equipment Effectiveness (OEE) = Availability × Performance × Quality"
-                )
-                col2.metric(
-                    "Availability",
-                    f"{latest_metrics['Availability']:.1%}",
-                    help="Availability = (Planned Production Time + Planned Downtime) / Actual Production Time"
-                )
-                col3.metric(
-                    "Performance",
-                    f"{latest_metrics['Performance']:.1%}",
-                    help="Performance = (Ideal Cycle Time × Total Pieces) / Actual Production Time"
-                )
-                col4.metric(
-                    "Quality",
-                    f"{latest_metrics['Quality']:.1%}",
-                    help="Quality = Good Pieces / Total Pieces"
-                )
+                
+                if metric_type == "Latest Values":
+                    latest_metrics = df_with_metrics.iloc[-1]
+                    
+                    col1.metric(
+                        "Overall OEE",
+                        f"{latest_metrics['OEE']:.1%}",
+                        help="Overall Equipment Effectiveness (OEE) = Availability × Performance × Quality"
+                    )
+                    col2.metric(
+                        "Availability",
+                        f"{latest_metrics['Availability']:.1%}",
+                        help="Availability = (Planned Production Time + Planned Downtime) / Actual Production Time"
+                    )
+                    col3.metric(
+                        "Performance",
+                        f"{latest_metrics['Performance']:.1%}",
+                        help="Performance = (Ideal Cycle Time × Total Pieces) / Actual Production Time"
+                    )
+                    col4.metric(
+                        "Quality",
+                        f"{latest_metrics['Quality']:.1%}",
+                        help="Quality = Good Pieces / Total Pieces"
+                    )
+                else:
+                    col1.metric(
+                        f"{period_label} Avg OEE",
+                        f"{avg_metrics['OEE']:.1%}",
+                        help=f"{period_label} average Overall Equipment Effectiveness (OEE) = Availability × Performance × Quality"
+                    )
+                    col2.metric(
+                        f"{period_label} Avg Availability",
+                        f"{avg_metrics['Availability']:.1%}",
+                        help=f"{period_label} average Availability = (Planned Production Time + Planned Downtime) / Actual Production Time"
+                    )
+                    col3.metric(
+                        f"{period_label} Avg Performance",
+                        f"{avg_metrics['Performance']:.1%}",
+                        help=f"{period_label} average Performance = (Ideal Cycle Time × Total Pieces) / Actual Production Time"
+                    )
+                    col4.metric(
+                        f"{period_label} Avg Quality",
+                        f"{avg_metrics['Quality']:.1%}",
+                        help=f"{period_label} average Quality = Good Pieces / Total Pieces"
+                    )
 
                 # Visualizations
                 st.markdown("### 📊 Trend Analysis")
