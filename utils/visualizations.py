@@ -84,8 +84,19 @@ def plot_metrics_breakdown(df):
         return fig
     
     # Get production line and part info for title
-    line = df['productionLine'].iloc[0]
-    part = df['partNumber'].iloc[0]
+    # Handle multiple lines and parts by showing counts
+    unique_lines = df['productionLine'].unique()
+    unique_parts = df['partNumber'].unique()
+    
+    if len(unique_lines) == 1:
+        line_display = unique_lines[0]
+    else:
+        line_display = f"{len(unique_lines)} production lines"
+        
+    if len(unique_parts) == 1:
+        part_display = unique_parts[0]
+    else:
+        part_display = f"{len(unique_parts)} part numbers"
     
     # Add month column for grouping
     df = df.copy()
@@ -164,7 +175,7 @@ def plot_metrics_breakdown(df):
     
     # Update layout for better visualization
     fig.update_layout(
-        title=f'OEE Metrics Trend for {line} - {part}',
+        title=f'OEE Metrics Trend for {line_display} - {part_display}',
         xaxis_title='Month',
         yaxis_title='Value',
         yaxis=dict(

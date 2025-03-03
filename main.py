@@ -211,18 +211,18 @@ def main():
 
                 # Define key metrics columns
                 metrics_cols = ['OEE', 'Availability', 'Performance', 'Quality']
-                
+
                 # Create a clean copy for calculations only
                 metrics_df = df_with_metrics.copy()
-                
+
                 # Ensure all metrics columns are numeric
                 for col in metrics_cols:
                     # Convert to float explicitly to handle any object types
                     metrics_df[col] = pd.to_numeric(metrics_df[col], errors='coerce')
-                
+
                 # Drop rows with NaN in any metrics column
                 metrics_df = metrics_df.dropna(subset=metrics_cols)
-                
+
                 # Calculate averages safely
                 avg_metrics = {}
                 for col in metrics_cols:
@@ -304,7 +304,7 @@ def main():
                         help="Select production line for metrics breakdown"
                     )
 
-                    breakdown_part = st.selectbox(
+                    breakdown_parts = st.multiselect(
                         "Part Number (Metrics Breakdown)",
                         options=sorted(df_with_metrics[df_with_metrics['productionLine'] == breakdown_line]['partNumber'].unique()),
                         key="breakdown_part",
@@ -314,7 +314,7 @@ def main():
                     # Filter metrics breakdown data
                     breakdown_df = df_with_metrics[
                         (df_with_metrics['productionLine'] == breakdown_line) &
-                        (df_with_metrics['partNumber'] == breakdown_part)
+                        (df_with_metrics['partNumber'].isin(breakdown_parts))
                     ]
 
                     if len(breakdown_df) > 0:
