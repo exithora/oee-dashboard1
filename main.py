@@ -10,6 +10,7 @@ from utils.visualizations import (
     plot_time_based_analysis,
     plot_downtime_analysis
 )
+from streamlit.caching import cache
 
 # Page configuration
 st.set_page_config(
@@ -22,6 +23,20 @@ st.set_page_config(
 # Custom CSS
 with open('assets/style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+@cache(persist="disk", show_spinner=False)
+def get_filtered_data(df, lines=None, parts=None, start_date=None, end_date=None):
+    df_filtered = df.copy()
+    if lines:
+        df_filtered = df_filtered[df_filtered['productionLine'].isin(lines)]
+    if parts:
+        df_filtered = df_filtered[df_filtered['partNumber'].isin(parts)]
+    if start_date and end_date:
+        df_filtered = df_filtered[
+            (df_filtered['startOfOrder'] >= start_date) &
+            (df_filtered['startOfOrder'] <= end_date)
+        ]
+    return df_filtered
 
 def main():
     # Header
@@ -152,23 +167,38 @@ def main():
                         help="Choose how to group the data for analysis"
                     )
 
-                # Filter data
-                filtered_df = df[
-                    df['productionLine'].isin(selected_lines) &
-                    df['partNumber'].isin(selected_parts)
-                ]
+                #Apply filters using cached function
 
-                if len(filtered_df) == 0:
-                    st.warning("No data available for the selected filters")
-                    return
+                try:
+                    # Placeholder - replace with actual date selection logic from the original code
+                    selected_start_date = "2024-01-01" #replace with actual date selection
+                    selected_end_date = "2024-12-31" #replace with actual date selection
+
+                    start_datetime = pd.to_datetime(selected_start_date)
+                    end_datetime = pd.to_datetime(selected_end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+
+                    # Use cached filtering function
+                    df_filtered = get_filtered_data(
+                        df, 
+                        lines=selected_lines, 
+                        parts=selected_parts,
+                        start_date=start_datetime,
+                        end_date=end_datetime
+                    )
+                except Exception as e:
+                    st.error(f"Filtering error: {str(e)}")
+                    df_filtered = get_filtered_data(df, lines=selected_lines, parts=selected_parts)
+
+                # Show data count for context
+                st.caption(f"Displaying data for {len(df_filtered):,} records from {df_filtered['startOfOrder'].min().strftime('%m/%d/%Y')} to {df_filtered['startOfOrder'].max().strftime('%m/%d/%Y')}")
 
                 # Calculate metrics
-                df_with_metrics = calculate_oee_metrics(filtered_df)
+                df_with_metrics = calculate_oee_metrics(df_filtered)
 
                 # Display overall metrics
                 st.markdown("### 📈 Key Performance Indicators")
                 metrics_container = st.container()
-                
+
                 # Group data based on time filter for KPIs
                 if time_filter == "Daily":
                     df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.date
@@ -182,7 +212,7 @@ def main():
                 else:  # Yearly
                     df_with_metrics['period'] = df_with_metrics['startOfOrder'].dt.year
                     period_label = "Yearly"
-                
+
                 # Calculate average metrics based on time period
                 avg_metrics = df_with_metrics.groupby('period').agg({
                     'OEE': 'mean',
@@ -190,7 +220,7 @@ def main():
                     'Performance': 'mean',
                     'Quality': 'mean'
                 }).mean()
-                
+
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(
                     "KPI Display Type:",
@@ -198,12 +228,12 @@ def main():
                     horizontal=True,
                     help=f"Choose to display the most recent values or {period_label.lower()} averages"
                 )
-                
+
                 col1, col2, col3, col4 = metrics_container.columns(4)
-                
+
                 if metric_type == "Latest Values":
                     latest_metrics = df_with_metrics.iloc[-1]
-                    
+
                     col1.metric(
                         "Overall OEE",
                         f"{latest_metrics['OEE']:.1%}",
@@ -254,7 +284,7 @@ def main():
                 col1, col2 = st.columns(2)
                 with col1:
                     st.markdown("### 📈 Monthly Metrics Trend")
-                    
+
                     # Add filters for metrics breakdown
                     breakdown_line = st.selectbox(
                         "Production Line (Metrics Breakdown)",
@@ -262,20 +292,20 @@ def main():
                         key="breakdown_line",
                         help="Select production line for metrics breakdown"
                     )
-                    
+
                     breakdown_part = st.selectbox(
                         "Part Number (Metrics Breakdown)",
                         options=sorted(df_with_metrics[df_with_metrics['productionLine'] == breakdown_line]['partNumber'].unique()),
                         key="breakdown_part",
                         help="Select part number for metrics breakdown"
                     )
-                    
+
                     # Filter metrics breakdown data
                     breakdown_df = df_with_metrics[
                         (df_with_metrics['productionLine'] == breakdown_line) &
                         (df_with_metrics['partNumber'] == breakdown_part)
                     ]
-                    
+
                     if len(breakdown_df) > 0:
                         st.plotly_chart(plot_metrics_breakdown(breakdown_df), use_container_width=True)
                     else:
@@ -283,11 +313,11 @@ def main():
 
                 with col2:
                     st.markdown(f"### 📊 {time_filter} OEE by Production Line")
-                    
+
                     # Add date range filter for time-based analysis
                     min_date = df_with_metrics['startOfOrder'].min().date()
                     max_date = df_with_metrics['startOfOrder'].max().date()
-                    
+
                     date_range = st.date_input(
                         "Date Range (Time Analysis)",
                         value=(min_date, max_date),
@@ -295,14 +325,14 @@ def main():
                         max_value=max_date,
                         help="Select date range for time analysis"
                     )
-                    
+
                     # Handle single date selection
                     if isinstance(date_range, tuple) and len(date_range) == 2:
                         start_date, end_date = date_range
                     else:
                         # If only one date is selected, use it for both start and end
                         start_date = end_date = date_range
-                    
+
                     # Convert to datetime for filtering - handle both tuple and single date cases
                     try:
                         start_datetime = pd.Timestamp(start_date)
@@ -312,13 +342,13 @@ def main():
                         # Fallback to using the entire date range
                         start_datetime = df_with_metrics['startOfOrder'].min()
                         end_datetime = df_with_metrics['startOfOrder'].max()
-                    
+
                     # Filter time-based analysis data
                     time_analysis_df = df_with_metrics[
                         (df_with_metrics['startOfOrder'] >= start_datetime) &
                         (df_with_metrics['startOfOrder'] <= end_datetime)
                     ]
-                    
+
                     if len(time_analysis_df) > 0:
                         st.plotly_chart(plot_time_based_analysis(time_analysis_df, time_filter), use_container_width=True)
                     else:
@@ -326,17 +356,17 @@ def main():
 
                 # Downtime Analysis
                 st.markdown("### ⏱️ Downtime Analysis")
-                
+
                 # Add date range filter for downtime analysis
                 st.markdown("#### Date Range Filter for Downtime")
                 downtime_min_date = df_with_metrics['startOfOrder'].min().date()
                 downtime_max_date = df_with_metrics['startOfOrder'].max().date()
-                
+
                 downtime_date_col1, downtime_date_col2 = st.columns([1, 3])
-                
+
                 with downtime_date_col1:
                     use_date_filter = st.checkbox("Filter by date range", value=False, help="Enable to view downtime data for a specific date range")
-                
+
                 with downtime_date_col2:
                     if use_date_filter:
                         downtime_date_range = st.date_input(
@@ -346,7 +376,7 @@ def main():
                             max_value=downtime_max_date,
                             help="Choose date range for downtime analysis"
                         )
-                        
+
                         # Handle single date and date range selections
                         if isinstance(downtime_date_range, tuple) and len(downtime_date_range) == 2:
                             downtime_start_date, downtime_end_date = downtime_date_range
@@ -355,7 +385,7 @@ def main():
                             downtime_start_date = downtime_end_date = downtime_date_range
                     else:
                         downtime_start_date = downtime_end_date = None
-                
+
                 # Apply date range filter to downtime analysis
                 st.plotly_chart(
                     plot_downtime_analysis(
@@ -365,7 +395,7 @@ def main():
                     ),
                     use_container_width=True
                 )
-                
+
                 # Data table
                 with st.expander("🔍 View Detailed Data"):
                     display_cols = [

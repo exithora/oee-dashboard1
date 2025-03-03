@@ -2,9 +2,24 @@
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
+import numpy as np
+from datetime import timedelta
 
 def plot_oee_trend(df):
-    """Create OEE trend line plot with components."""
+    """Create OEE trend line plot with components, optimized for large datasets."""
+    # Sample data to reduce points for large datasets 
+    if len(df) > 1000:
+        # Resample data to reduce points
+        df = df.sort_values('startOfOrder')
+        df = df.set_index('startOfOrder')
+        # Resample by day and take mean
+        df_resampled = df.resample('D').mean().reset_index()
+        df_resampled['productionLine'] = df['productionLine'].iloc[0]
+        df_resampled['partNumber'] = df['partNumber'].iloc[0]
+        df = df_resampled
+    else:
+        df = df.copy()
+    
     fig = go.Figure()
 
     # Add traces for each metric
@@ -57,7 +72,7 @@ def plot_oee_trend(df):
     return fig
 
 def plot_metrics_breakdown(df):
-    """Create metrics trend chart by month."""
+    """Create metrics trend chart by month, optimized."""
     if len(df) == 0:
         # Return empty figure if no data
         fig = go.Figure()
@@ -70,19 +85,22 @@ def plot_metrics_breakdown(df):
     
     # Add month column for grouping
     df = df.copy()
-    df['month'] = df['startOfOrder'].dt.strftime('%B %Y')
+    df['month'] = df['startOfOrder'].dt.strftime('%Y-%m')  # Use YYYY-MM format for better sorting
     
     # Group by month
     monthly_data = df.groupby('month').agg({
         'OEE': 'mean',
         'Availability': 'mean',
         'Performance': 'mean',
-        'Quality': 'mean'
+        'Quality': 'mean',
+        'startOfOrder': 'min'  # Get first date of each month for sorting
     }).reset_index()
     
     # Sort months chronologically
-    monthly_data['month_sort'] = pd.to_datetime(monthly_data['month'], format='%B %Y')
-    monthly_data = monthly_data.sort_values('month_sort')
+    monthly_data = monthly_data.sort_values('startOfOrder')
+    
+    # Format month display
+    monthly_data['month_display'] = pd.to_datetime(monthly_data['startOfOrder']).dt.strftime('%b %Y')
     
     # Create trend chart for all metrics
     fig = go.Figure()
@@ -92,7 +110,7 @@ def plot_metrics_breakdown(df):
     
     for metric, color in zip(metrics, colors):
         fig.add_trace(go.Scatter(
-            x=monthly_data['month'],
+            x=monthly_data['month_display'],
             y=monthly_data[metric],
             mode='lines+markers',
             name=metric,
@@ -110,7 +128,7 @@ def plot_metrics_breakdown(df):
     
     fig.update_layout(
         title={
-            'text': f'Monthly Metrics Trend - Line: {line}, Part: {part}<br><sub>Current Month: {current_month}</sub>',
+            'text': f'Monthly Metrics Trend<br><sup>Current Month: {current_month}</sup>',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
@@ -138,7 +156,7 @@ def plot_metrics_breakdown(df):
     return fig
 
 def plot_time_based_analysis(df, time_filter):
-    """Create time-based analysis chart by production line and part."""
+    """Create time-based analysis chart, optimized for clarity."""
     if len(df) == 0:
         # Return empty figure if no data
         fig = go.Figure()
@@ -152,10 +170,10 @@ def plot_time_based_analysis(df, time_filter):
         df['period'] = df['startOfOrder'].dt.date
         period_format = "Date: %{x}<br>"
     elif time_filter == "Weekly":
-        df['period'] = df['startOfOrder'].dt.strftime('Week %W, %Y')
+        df['period'] = df['startOfOrder'].dt.strftime('%Y-W%W')  # Year-Week format
         period_format = "Week: %{x}<br>"
     elif time_filter == "Monthly":
-        df['period'] = df['startOfOrder'].dt.strftime('%B %Y')
+        df['period'] = df['startOfOrder'].dt.strftime('%Y-%m')  # Year-Month format
         period_format = "Month: %{x}<br>"
     else:  # Yearly
         df['period'] = df['startOfOrder'].dt.year
@@ -166,51 +184,77 @@ def plot_time_based_analysis(df, time_filter):
     end_date = df['startOfOrder'].max().strftime('%m/%d/%Y')
     date_range = f"{start_date} to {end_date}"
 
-    # Group by period and production line for bar chart
+    # Group by period and production line
     grouped_data = df.groupby(['period', 'productionLine']).agg({
         'OEE': 'mean',
-        'Availability': 'mean',
-        'Performance': 'mean',
-        'Quality': 'mean',
-        'partNumber': lambda x: ', '.join(sorted(set(x)))  # Keep track of part numbers
+        'startOfOrder': 'min',  # For sorting
+        'partNumber': lambda x: ', '.join(sorted(set(x)))[:30]  # Limit part numbers display
     }).reset_index()
 
+    # Sort by date
+    grouped_data = grouped_data.sort_values('startOfOrder')
+    
+    # Limit number of periods shown to prevent overcrowding
+    if len(grouped_data['period'].unique()) > 20:
+        # Get reduced set of periods by taking evenly spaced samples
+        all_periods = sorted(grouped_data['period'].unique())
+        
+        # For yearly/monthly, take last 12
+        if time_filter in ["Yearly", "Monthly"]:
+            selected_periods = all_periods[-12:]
+        # For weekly, take last 8 weeks
+        elif time_filter == "Weekly":
+            selected_periods = all_periods[-8:]
+        # For daily, take 1 day per week for the last 4 weeks
+        else:
+            step = max(len(all_periods) // 8, 1)
+            selected_periods = all_periods[-8*step::step]
+            
+        grouped_data = grouped_data[grouped_data['period'].isin(selected_periods)]
+    
+    # Handle display formatting
+    if time_filter == "Daily":
+        grouped_data['period_display'] = pd.to_datetime(grouped_data['period']).dt.strftime('%m/%d')
+    elif time_filter == "Weekly":
+        grouped_data['period_display'] = pd.to_datetime(grouped_data['startOfOrder']).dt.strftime('W%W %b')
+    elif time_filter == "Monthly":
+        grouped_data['period_display'] = pd.to_datetime(grouped_data['startOfOrder']).dt.strftime('%b %Y')
+    else:
+        grouped_data['period_display'] = grouped_data['period'].astype(str)
+
+    # Create figure
     fig = go.Figure()
 
-    # For Daily analysis, display just date on x-axis
-    if time_filter == "Daily":
-        # Convert to string format for dates to simplify x-axis
-        grouped_data['period_display'] = grouped_data['period'].astype(str)
-    else:
-        grouped_data['period_display'] = grouped_data['period']
-
+    # Get at most 6 most common production lines to avoid too many bars
+    top_lines = df['productionLine'].value_counts().nlargest(6).index.tolist()
+    
     # Create separate bars per production line
-    for line in sorted(grouped_data['productionLine'].unique()):
+    for line in top_lines:
         line_data = grouped_data[grouped_data['productionLine'] == line]
-        
-        fig.add_trace(go.Bar(
-            x=line_data['period_display'],
-            y=line_data['OEE'],  # Just show OEE for simplicity
-            name=f"{line}",
-            hovertemplate=(
-                period_format +
-                "OEE: %{y:.1%}<br>"
-                f"Line: {line}<br>"
-                "Parts: %{customdata}"
-                "<extra></extra>"
-            ),
-            customdata=line_data['partNumber']
-        ))
+        if len(line_data) > 0:
+            fig.add_trace(go.Bar(
+                x=line_data['period_display'],
+                y=line_data['OEE'],
+                name=line,
+                hovertemplate=(
+                    f"Line: {line}<br>" +
+                    period_format.replace("%{x}", "%{customdata[0]}") +
+                    "OEE: %{y:.1%}<br>" +
+                    "Parts: %{customdata[1]}"
+                    "<extra></extra>"
+                ),
+                customdata=np.column_stack((line_data['period_display'], line_data['partNumber']))
+            ))
 
     fig.update_layout(
         title={
-            'text': f'{time_filter} OEE Analysis by Production Line<br><sub>{date_range}</sub>',
+            'text': f'{time_filter} OEE Analysis by Production Line<br><sup>{date_range}</sup>',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top'
         },
-        xaxis_title='Date' if time_filter == "Daily" else 'Period',
+        xaxis_title='Period',
         yaxis_title='OEE Value',
         yaxis_tickformat='.1%',
         showlegend=True,
@@ -224,17 +268,19 @@ def plot_time_based_analysis(df, time_filter):
         plot_bgcolor='white',
         paper_bgcolor='white',
         height=500,
-        barmode='group'  # Group bars by date
+        barmode='group',  # Group bars by date
+        bargap=0.15,      # Gap between bars
+        bargroupgap=0.1   # Gap between bar groups
     )
 
-    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
+    fig.update_xaxes(showgrid=False, tickangle=45)
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
 
     return fig
 
 
 def plot_downtime_analysis(df, start_date=None, end_date=None):
-    """Create downtime analysis visualization."""
+    """Create downtime analysis visualization, optimized for clarity."""
     if len(df) == 0:
         # Return empty figure if no data
         fig = go.Figure()
@@ -262,8 +308,8 @@ def plot_downtime_analysis(df, start_date=None, end_date=None):
     end_date_str = df['startOfOrder'].max().strftime('%m/%d/%Y')
     date_range = f"{start_date_str}" if start_date_str == end_date_str else f"{start_date_str} to {end_date_str}"
     
-    # Group by production line and part number
-    grouped_data = df.groupby(['productionLine', 'partNumber']).agg({
+    # Group by production line only to simplify the chart
+    grouped_data = df.groupby(['productionLine']).agg({
         'plannedDowntime': 'sum',
         'unplannedDowntime': 'sum',
         'startOfOrder': 'count'  # Count records for reference
@@ -273,43 +319,44 @@ def plot_downtime_analysis(df, start_date=None, end_date=None):
     grouped_data['totalDowntime'] = grouped_data['plannedDowntime'] + grouped_data['unplannedDowntime']
     grouped_data = grouped_data.sort_values('totalDowntime', ascending=False)
     
-    # Create combination labels for x-axis
-    grouped_data['linePartLabel'] = grouped_data['productionLine'] + ' - ' + grouped_data['partNumber']
+    # Limit to top 10 lines for clarity
+    if len(grouped_data) > 10:
+        grouped_data = grouped_data.head(10)
     
     # Create figure with two bar traces
     fig = go.Figure()
     
     fig.add_trace(go.Bar(
-        x=grouped_data['linePartLabel'],
+        x=grouped_data['productionLine'],
         y=grouped_data['plannedDowntime'],
         name='Planned Downtime',
         marker_color='#2ca02c',
         hovertemplate=(
-            "Line: %{customdata[0]}<br>" +
-            "Part: %{customdata[1]}<br>" +
+            "Line: %{x}<br>" +
             "Planned Downtime: %{y:.1f} min<br>" +
+            "Records: %{customdata:,}<br>" +
             "<extra></extra>"
         ),
-        customdata=grouped_data[['productionLine', 'partNumber']].values
+        customdata=grouped_data['startOfOrder']
     ))
     
     fig.add_trace(go.Bar(
-        x=grouped_data['linePartLabel'],
+        x=grouped_data['productionLine'],
         y=grouped_data['unplannedDowntime'],
         name='Unplanned Downtime',
         marker_color='#d62728',
         hovertemplate=(
-            "Line: %{customdata[0]}<br>" +
-            "Part: %{customdata[1]}<br>" +
+            "Line: %{x}<br>" +
             "Unplanned Downtime: %{y:.1f} min<br>" +
+            "Records: %{customdata:,}<br>" +
             "<extra></extra>"
         ),
-        customdata=grouped_data[['productionLine', 'partNumber']].values
+        customdata=grouped_data['startOfOrder']
     ))
     
     # Create title based on filter status
-    title_text = 'Downtime Analysis by Production Line and Part'
-    title_text += f'<br><sub>{date_range}</sub>'
+    title_text = 'Downtime Analysis by Production Line'
+    title_text += f'<br><sup>{date_range}</sup>'
     
     fig.update_layout(
         title={
@@ -319,7 +366,7 @@ def plot_downtime_analysis(df, start_date=None, end_date=None):
             'xanchor': 'center',
             'yanchor': 'top'
         },
-        xaxis_title='Production Line - Part Number',
+        xaxis_title='Production Line',
         yaxis_title='Downtime (minutes)',
         barmode='stack',
         showlegend=True,
@@ -335,7 +382,7 @@ def plot_downtime_analysis(df, start_date=None, end_date=None):
         height=500
     )
     
-    fig.update_xaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False, tickangle=45 if len(grouped_data) > 5 else 0)
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
     
     return fig
