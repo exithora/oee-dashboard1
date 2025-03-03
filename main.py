@@ -209,13 +209,20 @@ def main():
                 else:  # Yearly
                     period_label = "Yearly"
 
-                # Skip period grouping entirely and calculate simple averages
-                avg_metrics = {
-                    'OEE': float(df_with_metrics['OEE'].mean()),
-                    'Availability': float(df_with_metrics['Availability'].mean()),
-                    'Performance': float(df_with_metrics['Performance'].mean()),
-                    'Quality': float(df_with_metrics['Quality'].mean())
-                }
+                # Make sure we're using numeric type before calculating mean
+                # Convert each column to numeric type explicitly
+                metrics_cols = ['OEE', 'Availability', 'Performance', 'Quality']
+                for col in metrics_cols:
+                    # Ensure numeric type
+                    df_with_metrics[col] = pd.to_numeric(df_with_metrics[col], errors='coerce')
+                
+                # Calculate averages with proper numeric handling
+                avg_metrics = {}
+                for col in metrics_cols:
+                    # Get mean and handle potential NaN values
+                    mean_val = df_with_metrics[col].mean()
+                    # Convert to float but handle NaN
+                    avg_metrics[col] = 0.0 if pd.isna(mean_val) else float(mean_val)
 
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(
