@@ -90,15 +90,27 @@ def plot_metrics_breakdown(df):
     # Make sure we have numeric columns before aggregating
     metrics_list = ['OEE', 'Availability', 'Performance', 'Quality']
     for metric in metrics_list:
-        # Convert to numeric explicitly
+        # Convert to numeric explicitly, replacing non-numeric values with NaN
         df[metric] = pd.to_numeric(df[metric], errors='coerce')
     
-    # Create aggregation dictionary
-    agg_dict = {metric: 'mean' for metric in metrics_list}
-    agg_dict['startOfOrder'] = 'min'  # Get first date of each month for sorting
+    # Manual aggregation instead of using built-in pandas agg
+    result_data = []
+    for month_name, month_group in df.groupby('month'):
+        month_data = {'month': month_name, 'startOfOrder': month_group['startOfOrder'].min()}
+        
+        # Calculate means manually for each metric
+        for metric in metrics_list:
+            # Drop NaN values before calculating mean
+            valid_values = month_group[metric].dropna()
+            if len(valid_values) > 0:
+                month_data[metric] = valid_values.sum() / len(valid_values)
+            else:
+                month_data[metric] = 0.0
+                
+        result_data.append(month_data)
     
-    # Group by month with explicit numeric columns
-    monthly_data = df.groupby('month').agg(agg_dict).reset_index()
+    # Convert results to DataFrame
+    monthly_data = pd.DataFrame(result_data)
     
     # Sort months chronologically
     monthly_data = monthly_data.sort_values('startOfOrder')

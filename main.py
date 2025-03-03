@@ -209,20 +209,28 @@ def main():
                 else:  # Yearly
                     period_label = "Yearly"
 
-                # Make sure we're using numeric type before calculating mean
-                # Convert each column to numeric type explicitly
+                # Drop any rows with non-numeric values in key columns
                 metrics_cols = ['OEE', 'Availability', 'Performance', 'Quality']
-                for col in metrics_cols:
-                    # Ensure numeric type
-                    df_with_metrics[col] = pd.to_numeric(df_with_metrics[col], errors='coerce')
                 
-                # Calculate averages with proper numeric handling
+                # Create a clean copy for calculations only
+                metrics_df = df_with_metrics.copy()
+                
+                # Force convert columns to numeric, replacing any errors with NaN
+                for col in metrics_cols:
+                    metrics_df[col] = pd.to_numeric(metrics_df[col], errors='coerce')
+                
+                # Drop rows with NaN in any metrics column
+                metrics_df = metrics_df.dropna(subset=metrics_cols)
+                
+                # Manually calculate averages instead of using pandas aggregation
                 avg_metrics = {}
                 for col in metrics_cols:
-                    # Get mean and handle potential NaN values
-                    mean_val = df_with_metrics[col].mean()
-                    # Convert to float but handle NaN
-                    avg_metrics[col] = 0.0 if pd.isna(mean_val) else float(mean_val)
+                    if len(metrics_df) > 0:
+                        values = metrics_df[col].to_list()
+                        total = sum(values)
+                        avg_metrics[col] = total / len(values) if len(values) > 0 else 0.0
+                    else:
+                        avg_metrics[col] = 0.0
 
                 # Option to switch between latest and average metrics
                 metric_type = st.radio(
