@@ -299,11 +299,18 @@ def main():
                     if isinstance(date_range, tuple) and len(date_range) == 2:
                         start_date, end_date = date_range
                     else:
+                        # If only one date is selected, use it for both start and end
                         start_date = end_date = date_range
                     
-                    # Convert to datetime for filtering
-                    start_datetime = pd.Timestamp(start_date)
-                    end_datetime = pd.Timestamp(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+                    # Convert to datetime for filtering - handle both tuple and single date cases
+                    try:
+                        start_datetime = pd.Timestamp(start_date)
+                        end_datetime = pd.Timestamp(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+                    except Exception as e:
+                        st.error(f"Date conversion error: {str(e)}")
+                        # Fallback to using the entire date range
+                        start_datetime = df_with_metrics['startOfOrder'].min()
+                        end_datetime = df_with_metrics['startOfOrder'].max()
                     
                     # Filter time-based analysis data
                     time_analysis_df = df_with_metrics[
