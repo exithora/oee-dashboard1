@@ -73,6 +73,10 @@ def plot_oee_trend(df):
 
 def plot_metrics_breakdown(df):
     """Create metrics trend chart by month, optimized."""
+    import pandas as pd
+    import plotly.graph_objects as go
+    import numpy as np
+    
     if len(df) == 0:
         # Return empty figure if no data
         fig = go.Figure()
@@ -87,27 +91,127 @@ def plot_metrics_breakdown(df):
     df = df.copy()
     df['month'] = df['startOfOrder'].dt.strftime('%Y-%m')  # Use YYYY-MM format for better sorting
     
-    # Make sure we have numeric columns before aggregating
+    # Ensure metrics are numeric before aggregating
     metrics_list = ['OEE', 'Availability', 'Performance', 'Quality']
     for metric in metrics_list:
-        # Convert to numeric explicitly, replacing non-numeric values with NaN
+        # Convert to float explicitly to handle any object types
         df[metric] = pd.to_numeric(df[metric], errors='coerce')
     
-    # Manual aggregation instead of using built-in pandas agg
+    # Aggregate by month - using manual calculation to avoid pandas aggregation issues
     result_data = []
     for month_name, month_group in df.groupby('month'):
-        month_data = {'month': month_name, 'startOfOrder': month_group['startOfOrder'].min()}
+        month_data = {
+            'month': month_name, 
+            'startOfOrder': month_group['startOfOrder'].min()
+        }
         
-        # Calculate means manually for each metric
+        # Calculate means for each metric
         for metric in metrics_list:
-            # Drop NaN values before calculating mean
             valid_values = month_group[metric].dropna()
             if len(valid_values) > 0:
-                month_data[metric] = valid_values.sum() / len(valid_values)
+                # Explicitly calculate mean from numeric values only
+                month_data[metric] = float(valid_values.mean())
             else:
                 month_data[metric] = 0.0
                 
         result_data.append(month_data)
+    
+    # Convert result data to DataFrame for plotting
+    monthly_df = pd.DataFrame(result_data)
+    
+    # Sort by date for proper trend visualization
+    monthly_df = monthly_df.sort_values('startOfOrder')
+    
+    # Create figure with separate traces for each metric
+    fig = go.Figure()
+    
+    # Add traces for each metric
+    fig.add_trace(go.Scatter(
+        x=monthly_df['month'],
+        y=monthly_df['OEE'],
+        mode='lines+markers',
+        name='OEE',
+        line=dict(color='#1f77b4', width=2),
+        marker=dict(size=8)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=monthly_df['month'],
+        y=monthly_df['Availability'],
+        mode='lines+markers',
+        name='Availability',
+        line=dict(color='#ff7f0e', width=2),
+        marker=dict(size=8)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=monthly_df['month'],
+        y=monthly_df['Performance'],
+        mode='lines+markers',
+        name='Performance',
+        line=dict(color='#2ca02c', width=2),
+        marker=dict(size=8)
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=monthly_df['month'],
+        y=monthly_df['Quality'],
+        mode='lines+markers',
+        name='Quality',
+        line=dict(color='#d62728', width=2),
+        marker=dict(size=8)
+    ))
+    
+    # Update layout for better visualization
+    fig.update_layout(
+        title=f'OEE Metrics Trend for {line} - {part}',
+        xaxis_title='Month',
+        yaxis_title='Value',
+        yaxis=dict(
+            tickformat='.0%',
+            range=[0, 1],
+            gridcolor='lightgray'
+        ),
+        xaxis=dict(
+            tickangle=-45,
+            gridcolor='lightgray'
+        ),
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='right',
+            x=1
+        ),
+        margin=dict(t=80, b=50, l=60, r=40),
+        hovermode='x unified',
+        plot_bgcolor='white'
+    )
+    
+    # Add benchmark line at 0.85 (standard OEE target)
+    fig.add_shape(
+        type='line',
+        x0=monthly_df['month'].iloc[0],
+        y0=0.85,
+        x1=monthly_df['month'].iloc[-1],
+        y1=0.85,
+        line=dict(
+            color='rgba(100, 100, 100, 0.5)',
+            width=2,
+            dash='dash'
+        )
+    )
+    
+    fig.add_annotation(
+        x=monthly_df['month'].iloc[0],
+        y=0.85,
+        text='Target (85%)',
+        showarrow=False,
+        yshift=10,
+        font=dict(size=10)
+    )
+    
+    return fig
     
     # Convert results to DataFrame
     monthly_data = pd.DataFrame(result_data)
