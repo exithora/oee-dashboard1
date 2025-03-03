@@ -1,3 +1,4 @@
+
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
@@ -107,31 +108,6 @@ def plot_metrics_breakdown(df):
     
     current_month = df['startOfOrder'].max().strftime('%B %Y')
     
-    fig.update_layout(
-        title={
-            'text': f'Monthly Metrics Trend - Line: {line}, Part: {part}<br><sub>Current Month: {current_month}</sub>',
-            'y': 0.95,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
-        xaxis_title='Month',
-        yaxis_title='Value',
-        yaxis_tickformat='.1%',
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        height=400
-    )
-</old_str>
-<new_str>
     fig.update_layout(
         title={
             'text': f'Monthly Metrics Trend - Line: {line}, Part: {part}<br><sub>Current Month: {current_month}</sub>',
