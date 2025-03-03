@@ -281,7 +281,7 @@ def main():
                         st.warning("No data available for the selected breakdown filters")
 
                 with col2:
-                    st.markdown(f"### 📈 {time_filter} Analysis")
+                    st.markdown(f"### 📊 {time_filter} OEE by Production Line")
                     
                     # Add date range filter for time-based analysis
                     min_date = df_with_metrics['startOfOrder'].min().date()

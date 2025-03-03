@@ -159,45 +159,52 @@ def plot_time_based_analysis(df, time_filter):
     end_date = df['startOfOrder'].max().strftime('%m/%d/%Y')
     date_range = f"{start_date} to {end_date}"
 
-    grouped_data = df.groupby(['period', 'productionLine', 'partNumber']).agg({
+    # Group by period and production line for bar chart
+    grouped_data = df.groupby(['period', 'productionLine']).agg({
         'OEE': 'mean',
         'Availability': 'mean',
         'Performance': 'mean',
-        'Quality': 'mean'
+        'Quality': 'mean',
+        'partNumber': lambda x: ', '.join(sorted(set(x)))  # Keep track of part numbers
     }).reset_index()
 
     fig = go.Figure()
 
-    metrics = ['OEE', 'Availability', 'Performance', 'Quality']
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+    # For Daily analysis, display just date on x-axis
+    if time_filter == "Daily":
+        # Convert to string format for dates to simplify x-axis
+        grouped_data['period_display'] = grouped_data['period'].astype(str)
+    else:
+        grouped_data['period_display'] = grouped_data['period']
 
-    for metric, color in zip(metrics, colors):
-        fig.add_trace(go.Scatter(
-            x=grouped_data['period'],
-            y=grouped_data[metric],
-            mode='lines+markers',
-            name=metric,
-            line=dict(color=color),
+    # Create separate bars per production line
+    for line in sorted(grouped_data['productionLine'].unique()):
+        line_data = grouped_data[grouped_data['productionLine'] == line]
+        
+        fig.add_trace(go.Bar(
+            x=line_data['period_display'],
+            y=line_data['OEE'],  # Just show OEE for simplicity
+            name=f"{line}",
             hovertemplate=(
                 period_format +
-                f"{metric}: %{{y:.1%}}<br>"
-                "Line: %{customdata[0]}<br>"
-                "Part: %{customdata[1]}"
+                "OEE: %{y:.1%}<br>"
+                f"Line: {line}<br>"
+                "Parts: %{customdata}"
                 "<extra></extra>"
             ),
-            customdata=grouped_data[['productionLine', 'partNumber']]
+            customdata=line_data['partNumber']
         ))
 
     fig.update_layout(
         title={
-            'text': f'{time_filter} Average Metrics Analysis<br><sub>{date_range}</sub>',
+            'text': f'{time_filter} OEE Analysis by Production Line<br><sub>{date_range}</sub>',
             'y': 0.95,
             'x': 0.5,
             'xanchor': 'center',
             'yanchor': 'top'
         },
-        xaxis_title='Period',
-        yaxis_title='Average Value',
+        xaxis_title='Date' if time_filter == "Daily" else 'Period',
+        yaxis_title='OEE Value',
         yaxis_tickformat='.1%',
         showlegend=True,
         legend=dict(
@@ -209,7 +216,8 @@ def plot_time_based_analysis(df, time_filter):
         ),
         plot_bgcolor='white',
         paper_bgcolor='white',
-        height=500
+        height=500,
+        barmode='group'  # Group bars by date
     )
 
     fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='#f0f0f0')
